@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    tools:showIn="navigation_view">
+
+    <group android:id="@+id/drawer_public" android:visible="true" android:title="Public">
+    </group>
+
+    <group android:id="@+id/drawer_private" android:visible="true" android:title="Private">
+    </group>
+
+    <group android:id="@+id/drawer_direct" android:visible="true" android:title="Direct">
+    </group>
+
+</menu>
