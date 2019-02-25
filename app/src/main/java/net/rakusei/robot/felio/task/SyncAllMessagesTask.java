@@ -18,6 +18,7 @@ import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 
 public class SyncAllMessagesTask extends AsyncTask<String, Void, String> {
@@ -81,12 +82,49 @@ public class SyncAllMessagesTask extends AsyncTask<String, Void, String> {
                             Log.d("inFor", "ERROR");
                         } else {
                             JSONObject jo = new JSONObject(res);
-                            JSONArray ja_1 = jo.getJSONArray("posts");
+                            JSONObject ja_1 = jo.getJSONObject("posts");
                             AppDatabase db = Room.databaseBuilder(context.getApplicationContext(), AppDatabase.class, "messages").build();
-                            for (int k = 0; k < ja_1.length(); k++) {
-                                db.messageDao().insertAll(new Message());
+                            Iterator<String> keys = ja_1.keys();
+                            while (keys.hasNext()) {
+                                String key = keys.next();
+                                JSONObject postData = ja_1.getJSONObject(key);
+                                if (!postData.has("file_ids")) {
+                                    postData.put("file_ids", new JSONArray());
+                                }
+                                if (!postData.has("filenames")) {
+                                    postData.put("filenames", new JSONArray());
+                                }
+                                if (!postData.has("hashtag")) {
+                                    postData.put("hashtag", "");
+                                }
+                                if (!postData.has("metadata")) {
+                                    postData.put("metadata", new JSONObject());
+                                }
+                                Message message = new Message();
+                                message.channel_id = postData.getString("channel_id");
+                                message.create_at = postData.getLong("create_at");
+                                message.delete_at = postData.getLong("delete_at");
+                                message.edit_at = postData.getLong("edit_at");
+                                message.update_at = postData.getLong("update_at");
+                                message.file_ids = postData.getJSONArray("file_ids").toString();
+                                message.filenames = postData.getJSONArray("filenames").toString();
+                                message.hashtag = postData.getString("hashtag");
+                                message.id = postData.getString("id");
+                                message.message = postData.getString("message");
+                                message.metadata = postData.getJSONObject("metadata").toString();
+                                message.original_id = postData.getString("original_id");
+                                message.parent_id = postData.getString("parent_id");
+                                message.pending_post_id = postData.getString("pending_post_id");
+                                message.props = postData.getJSONObject("props").toString();
+                                message.root_id = postData.getString("root_id");
+                                message.type = postData.getString("type");
+                                message.user_id = postData.getString("user_id");
+                                Log.d("message", message.toString());
+                                db.messageDao().insert(message);
                             }
+                            db.close();
                         }
+                        Thread.sleep(1000);
                     }
                 }
                 //Log.d("data",ja.toString(3));
@@ -120,7 +158,7 @@ public class SyncAllMessagesTask extends AsyncTask<String, Void, String> {
                 while ((line = br.readLine()) != null) {
                     data += line;
                 }
-                JSONArray ja = new JSONArray(data);
+                JSONObject ja = new JSONObject(data);
                 con.disconnect();
                 return ja.toString();
             } else {

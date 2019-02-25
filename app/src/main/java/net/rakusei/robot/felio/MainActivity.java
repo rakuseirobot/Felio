@@ -25,6 +25,7 @@ import android.view.Menu;
 
 import net.rakusei.robot.felio.activity.LoginActivity;
 import net.rakusei.robot.felio.task.ChannelTask;
+import net.rakusei.robot.felio.task.SyncAllMessagesTask;
 import net.rakusei.robot.felio.task.TeamsTask;
 import net.rakusei.robot.felio.task.UserTask;
 
@@ -63,6 +64,7 @@ public class MainActivity extends AppCompatActivity
         new TeamsTask(this).execute();
         new ChannelTask(this).execute();
         new UserTask(this).execute();
+        //new SyncAllMessagesTask(this).execute();
     }
 
     @Override

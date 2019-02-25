@@ -1,14 +1,15 @@
 package net.rakusei.robot.felio.model;
 
+import androidx.annotation.NonNull;
 import androidx.room.ColumnInfo;
 import androidx.room.Entity;
 import androidx.room.PrimaryKey;
 
 @Entity
 public class Message {
-    @PrimaryKey
-    public int _id;
 
+    @PrimaryKey
+    @NonNull
     @ColumnInfo(name = "id")
     public String id;
 
@@ -62,4 +63,10 @@ public class Message {
 
     @ColumnInfo(name = "metadata")
     public String metadata;
+
+    @NonNull
+    @Override
+    public String toString() {
+        return "Message { id=" + id + ",user_id=" + user_id + ",message=" + message + "}";
+    }
 }
