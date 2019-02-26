@@ -7,13 +7,17 @@ import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.room.Room;
+
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.load.model.GlideUrl;
 import com.bumptech.glide.load.model.LazyHeaders;
 
 import net.rakusei.robot.felio.MainActivity;
 import net.rakusei.robot.felio.R;
+import net.rakusei.robot.felio.database.AppDatabase;
 import net.rakusei.robot.felio.model.Channel;
+import net.rakusei.robot.felio.model.User;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -61,6 +65,51 @@ public class UserTask extends AsyncTask<String, Void, String> {
                     data += line;
                 }
                 JSONObject ja = new JSONObject(data);
+                AppDatabase db = Room.databaseBuilder(context.getApplicationContext(), AppDatabase.class, "felio").build();
+                User user = new User();
+                user.username = ja.getString("username");
+                user.auth_service = ja.getString("auth_service");
+                user.create_at = ja.getLong("create_at");
+                user.delete_at = ja.getLong("delete_at");
+                user.update_at = ja.getLong("update_at");
+                user.email = ja.getString("email");
+                if (!ja.has("email_verified")) {
+                    ja.put("email_verified", true);
+                }
+                user.email_verified = ja.getBoolean("email_verified");
+                if (!ja.has("failed_attempts")) {
+                    ja.put("failed_attempts", 0);
+                }
+                user.failed_attempts = ja.getInt("failed_attempts");
+                user.first_name = ja.getString("first_name");
+                user.id = ja.getString("id");
+                user.last_name = ja.getString("last_name");
+                if (!ja.has("last_password_update")) {
+                    ja.put("last_password_update", 0);
+                }
+                user.last_password_update = ja.getLong("last_password_update");
+                if (!ja.has("last_picture_update")) {
+                    ja.put("last_picture_update", 0);
+                }
+                user.last_picture_update = ja.getLong("last_picture_update");
+                user.locale = ja.getString("locale");
+                if (!ja.has("mfa_active")) {
+                    ja.put("mfa_active", true);
+                }
+                user.mfa_active = ja.getBoolean("mfa_active");
+                user.nickname = ja.getString("nickname");
+                if (!ja.has("notify_props")) {
+                    ja.put("notify_props", new JSONObject());
+                }
+                user.notify_props = ja.getJSONObject("notify_props").toString();
+                if (!ja.has("props")) {
+                    ja.put("props", new JSONObject());
+                }
+                user.props = ja.getJSONObject("props").toString();
+                user.roles = ja.getString("roles");
+                user.timezone = ja.getJSONObject("timezone").toString();
+                db.userDao().insert(user);
+                db.close();
                 //Log.d("data",ja.toString(3));
                 con.disconnect();
                 return ja.toString();

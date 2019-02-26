@@ -6,6 +6,7 @@ import android.os.Bundle;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.snackbar.Snackbar;
 
+import android.util.Log;
 import android.view.View;
 
 import androidx.appcompat.graphics.drawable.DrawerArrowDrawable;
@@ -22,17 +23,23 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 
 import android.view.Menu;
+import android.widget.Toast;
 
 import net.rakusei.robot.felio.activity.LoginActivity;
+import net.rakusei.robot.felio.model.Channel;
 import net.rakusei.robot.felio.task.ChannelTask;
 import net.rakusei.robot.felio.task.SyncAllMessagesTask;
 import net.rakusei.robot.felio.task.TeamsTask;
 import net.rakusei.robot.felio.task.UserTask;
 
+import java.util.List;
+
 public class MainActivity extends AppCompatActivity
         implements NavigationView.OnNavigationItemSelectedListener {
 
     public NavigationView navigationView;
+
+    public List<Channel> channelList = null;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -104,6 +111,25 @@ public class MainActivity extends AppCompatActivity
     public boolean onNavigationItemSelected(MenuItem item) {
         // Handle navigation view item clicks here.
         int id = item.getItemId();
+
+        if (channelList == null) {
+            Toast.makeText(this, "Please wait...", Toast.LENGTH_LONG).show();
+            return false;
+        }
+        Channel c = null;
+
+        for (Channel channel : channelList) {
+            if (channel.display_name.equals(item.getTitle())) {
+                c = channel;
+            }
+        }
+
+        if (c == null) {
+            Toast.makeText(this, "ERROR", Toast.LENGTH_LONG).show();
+            return false;
+        }
+
+        Log.d("onItemSelected", c.display_name + ":" + c.id);
         DrawerLayout drawer = findViewById(R.id.drawer_layout);
         drawer.closeDrawer(GravityCompat.START);
         return true;

@@ -124,6 +124,8 @@ public class ChannelTask extends AsyncTask<String, Void, String> {
                     activity.navigationView.getMenu().add(R.id.drawer_private, public_channels.size() + 1 + i, 0, private_channels.get(i).display_name).setIcon(R.drawable.outline_chat_bubble_outline_black_48);
                 }
 
+                activity.channelList = channels;
+
                 for (int i = 0; direct_channels.size() > i; i++) {
                     String[] channel_ids = direct_channels.get(i).display_name.split("__");
                     String target_id = "";

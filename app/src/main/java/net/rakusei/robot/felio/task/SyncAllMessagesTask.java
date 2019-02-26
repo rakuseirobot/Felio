@@ -83,7 +83,7 @@ public class SyncAllMessagesTask extends AsyncTask<String, Void, String> {
                         } else {
                             JSONObject jo = new JSONObject(res);
                             JSONObject ja_1 = jo.getJSONObject("posts");
-                            AppDatabase db = Room.databaseBuilder(context.getApplicationContext(), AppDatabase.class, "messages").build();
+                            AppDatabase db = Room.databaseBuilder(context.getApplicationContext(), AppDatabase.class, "felio").build();
                             Iterator<String> keys = ja_1.keys();
                             while (keys.hasNext()) {
                                 String key = keys.next();
