@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <ImageView
+        android:id="@+id/userimageView"
+        android:layout_marginLeft="40px"
+        android:layout_marginTop="40px"
+        android:layout_width="130px"
+        android:layout_height="130px"
+        android:src="@mipmap/ic_launcher" />
+
+    <TextView
+        android:id="@+id/userNametextView"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_toRightOf="@id/userimageView"
+        android:layout_marginTop="40px"
+        android:layout_marginLeft="40px"
+        android:text="65th.Tomo"
+        android:textSize="50px" />
+
+    <TextView
+        android:id="@+id/userTimeStamptextView"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_toRightOf="@id/userNametextView"
+        android:layout_marginTop="45px"
+        android:layout_marginLeft="40px"
+        android:text="02/27/19 21:58"
+        android:textSize="40px" />
+
+    <TextView
+        android:id="@+id/userMessagetextView"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/userNametextView"
+        android:layout_toRightOf="@id/userimageView"
+        android:layout_marginTop="15px"
+        android:layout_marginLeft="40px"
+        android:text="Hello World!"
+        android:textSize="40px" />
+
+</RelativeLayout>

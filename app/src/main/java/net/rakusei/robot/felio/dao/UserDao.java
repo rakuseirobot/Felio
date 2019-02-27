@@ -16,8 +16,8 @@ public interface UserDao {
     @Query("SELECT * FROM user")
     List<User> getAll();
 
-    @Query("SELECT * FROM user WHERE id = :id")
-    List<User> getMessagesByChannel(String id);
+    @Query("SELECT * FROM user WHERE id = :id LIMIT 1")
+    User getUserById(String id);
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     void insert(User user);

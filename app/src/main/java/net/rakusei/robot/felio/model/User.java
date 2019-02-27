@@ -70,6 +70,14 @@ public class User {
     @ColumnInfo(name = "timezone")
     public String timezone;
 
+    public String getName() {
+        if (nickname.equals("")) {
+            return first_name + last_name;
+        } else {
+            return nickname;
+        }
+    }
+
     @NonNull
     @Override
     public String toString() {
