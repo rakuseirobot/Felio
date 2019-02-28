@@ -49,8 +49,10 @@ import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class MainActivity extends AppCompatActivity
         implements NavigationView.OnNavigationItemSelectedListener {
@@ -158,10 +160,13 @@ public class MainActivity extends AppCompatActivity
                 }
                 db.close();
                 List<Message> messageList = db.messageDao().getMessagesByChannel("tgxqoq8zajdt3q7c3sz9m8n55a");
+                List<Message> sortedList = messageList.stream().sorted(
+                        (o1, o2) -> Long.compare(o1.create_at, o2.create_at)).collect(Collectors.toList());
+
                 handler.post(() -> {
                     final ListView listview = findViewById(R.id.message_listView);
                     MessageAdapter adapter = new MessageAdapter(MainActivity.this);
-                    adapter.setMessageList(messageList);
+                    adapter.setMessageList(sortedList);
                     listview.setAdapter(adapter);
                 });
                 //Log.d("data",ja.toString(3));
