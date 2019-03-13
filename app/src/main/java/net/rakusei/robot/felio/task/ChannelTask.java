@@ -74,7 +74,6 @@ public class ChannelTask extends AsyncTask<String, Void, String> {
                 List<Channel> direct_channels = new ArrayList<>();
                 for (int i = 0; jo.length() > i; i++) {
                     JSONObject channel_data = jo.getJSONObject(i);
-                    Log.d("channel", channel_data.toString(3));
                     if (!channel_data.has("type")) {
                         channel_data.put("type", "P");
                     }
@@ -89,6 +88,7 @@ public class ChannelTask extends AsyncTask<String, Void, String> {
                             channel_data.getInt("last_post_at"), channel_data.getString("purpose"),
                             channel_data.getString("team_id"), channel_data.getInt("total_msg_count"),
                             channel_data.getString("type"), channel_data.getInt("update_at")));
+                    Log.d(channels.get(channels.size() - 1).display_name, channels.get(channels.size() - 1).id);
                     if (channel_data.getString("type").equals("P")) {
                         private_channels.add(new Channel(
                                 channel_data.getInt("create_at"), channel_data.getString("creator_id"),

@@ -130,12 +130,15 @@ public class UserTask extends AsyncTask<String, Void, String> {
             if (context instanceof MainActivity) {
                 MainActivity activity = (MainActivity) context;
                 if(context.getSharedPreferences("main",Context.MODE_PRIVATE).getString("id","").equals(jo.getString("id"))){
-                    ((TextView)activity.findViewById(R.id.display_name)).setText(jo.getString("nickname"));
-                    ((TextView)activity.findViewById(R.id.display_email)).setText(jo.getString("email"));
-                    GlideUrl glideUrl = new GlideUrl("https://mattermost.robot.rakusei.net/api/v4/users/"+jo.getString("id")+"/image?_="+jo.getLong("last_picture_update"), new LazyHeaders.Builder()
-                            .addHeader("authorization","BEARER "+context.getSharedPreferences("main",Context.MODE_PRIVATE).getString("token",""))
-                            .build());
-                    Glide.with(context).load(glideUrl).into((ImageView) activity.findViewById(R.id.imageView));
+                    try {
+                        ((TextView) activity.findViewById(R.id.display_name)).setText(jo.getString("nickname"));
+                        ((TextView) activity.findViewById(R.id.display_email)).setText(jo.getString("email"));
+                        GlideUrl glideUrl = new GlideUrl("https://mattermost.robot.rakusei.net/api/v4/users/" + jo.getString("id") + "/image?_=" + jo.getLong("last_picture_update"), new LazyHeaders.Builder()
+                                .addHeader("authorization", "BEARER " + context.getSharedPreferences("main", Context.MODE_PRIVATE).getString("token", ""))
+                                .build());
+                        Glide.with(context).load(glideUrl).into((ImageView) activity.findViewById(R.id.imageView));
+                    } catch (Exception e) {
+                    }
                 }else{
                     if(jo.getString("nickname").equals("")){
                         activity.navigationView.getMenu().add(R.id.drawer_direct, 100, 0,jo.getString("first_name")+jo.getString("last_name")).setIcon(R.drawable.outline_person_outline_black_48);

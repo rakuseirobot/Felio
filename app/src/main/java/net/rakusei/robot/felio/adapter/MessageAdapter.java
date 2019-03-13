@@ -19,6 +19,7 @@ import net.rakusei.robot.felio.R;
 import net.rakusei.robot.felio.database.AppDatabase;
 import net.rakusei.robot.felio.model.Message;
 import net.rakusei.robot.felio.model.User;
+import net.rakusei.robot.felio.task.UserTask;
 
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
@@ -43,6 +44,9 @@ public class MessageAdapter extends BaseAdapter {
         this.messageList = messageList;
     }
 
+    public void addMessage(Message message) {
+        this.messageList.add(message);
+    }
     @Override
     public int getCount() {
         return messageList.size();
@@ -77,6 +81,7 @@ public class MessageAdapter extends BaseAdapter {
                             .build());
                     Glide.with(context).load(glideUrl).into((ImageView) finalConvertView.findViewById(R.id.userimageView));
                 } else {
+                    new UserTask(context).execute(new String[]{messageList.get(position).user_id});
                     DateFormat formatter = new SimpleDateFormat("dd/MM/yyyy kk:mm:ss", Locale.JAPAN);
                     ((TextView) finalConvertView.findViewById(R.id.userTimeStamptextView)).setText(formatter.format(messageList.get(position).create_at));
                     ((TextView) finalConvertView.findViewById(R.id.userNametextView)).setText("Unknown");
