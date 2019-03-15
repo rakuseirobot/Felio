@@ -1,7 +1,6 @@
 package net.rakusei.robot.felio.adapter;
 
 import android.content.Context;
-import android.media.Image;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -23,16 +22,11 @@ import net.rakusei.robot.felio.model.User;
 import net.rakusei.robot.felio.task.UserTask;
 
 import org.json.JSONArray;
-import org.json.JSONException;
 
-import java.net.URL;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
-import java.time.ZoneId;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
-import java.util.TimeZone;
 
 public class MessageAdapter extends BaseAdapter {
 
@@ -94,11 +88,11 @@ public class MessageAdapter extends BaseAdapter {
                                     .build());
                             Glide.with(context).load(glideUrl).into((ImageView) finalConvertView.findViewById(R.id.userMessageimageView));
                         } else {
-                            ((ImageView) finalConvertView.findViewById(R.id.userMessageimageView)).setLayoutParams(new android.widget.RelativeLayout.LayoutParams(android.widget.RelativeLayout.LayoutParams.MATCH_PARENT, 0));
+                            finalConvertView.findViewById(R.id.userMessageimageView).setLayoutParams(new android.widget.RelativeLayout.LayoutParams(android.widget.RelativeLayout.LayoutParams.MATCH_PARENT, 0));
                         }
                     } catch (Exception e) {
                         e.printStackTrace();
-                        ((ImageView) finalConvertView.findViewById(R.id.userMessageimageView)).setLayoutParams(new android.widget.RelativeLayout.LayoutParams(android.widget.RelativeLayout.LayoutParams.MATCH_PARENT, 0));
+                        finalConvertView.findViewById(R.id.userMessageimageView).setLayoutParams(new android.widget.RelativeLayout.LayoutParams(android.widget.RelativeLayout.LayoutParams.MATCH_PARENT, 0));
                     }
                 } else {
                     new UserTask(context).execute(new String[]{messageList.get(position).user_id});
