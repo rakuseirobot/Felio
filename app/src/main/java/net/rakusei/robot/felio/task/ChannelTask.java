@@ -5,8 +5,11 @@ import android.os.AsyncTask;
 import android.util.Log;
 import android.widget.Toast;
 
+import androidx.room.Room;
+
 import net.rakusei.robot.felio.MainActivity;
 import net.rakusei.robot.felio.R;
+import net.rakusei.robot.felio.database.AppDatabase;
 import net.rakusei.robot.felio.model.Channel;
 
 import org.json.JSONArray;
@@ -115,6 +118,15 @@ public class ChannelTask extends AsyncTask<String, Void, String> {
                                 channel_data.getString("type"), channel_data.getInt("update_at")));
                     }
                 }
+
+                new Thread(() -> {
+                    AppDatabase db = Room.databaseBuilder(context.getApplicationContext(), AppDatabase.class, "felio").fallbackToDestructiveMigration().build();
+                    for (Channel channel : channels) {
+                        db.channelDao().insert(channel);
+                    }
+                    db.close();
+                }).start();
+
                 MainActivity activity = (MainActivity) context;
 
                 for (int i = 0; public_channels.size() > i; i++) {

@@ -28,6 +28,7 @@ public class MStreamClient extends WebSocketClient {
     public MStreamClient(Context con) throws URISyntaxException {
         super(new URI("wss://mattermost.robot.rakusei.net:443/api/v4/websocket"));
         token = con.getSharedPreferences("main", Context.MODE_PRIVATE).getString("token", "");
+        this.setConnectionLostTimeout(999999);
     }
 
     @Override

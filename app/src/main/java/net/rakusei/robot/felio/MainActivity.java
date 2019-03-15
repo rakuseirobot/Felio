@@ -2,17 +2,11 @@ package net.rakusei.robot.felio;
 
 import android.content.Context;
 import android.content.Intent;
-import android.inputmethodservice.InputMethodService;
 import android.os.Bundle;
-
-import com.google.android.material.floatingactionbutton.FloatingActionButton;
-import com.google.android.material.snackbar.Snackbar;
 
 import android.os.Handler;
 import android.util.Log;
-import android.view.View;
 
-import androidx.appcompat.graphics.drawable.DrawerArrowDrawable;
 import androidx.core.view.GravityCompat;
 import androidx.appcompat.app.ActionBarDrawerToggle;
 
@@ -22,12 +16,10 @@ import com.google.android.material.navigation.NavigationView;
 
 import androidx.drawerlayout.widget.DrawerLayout;
 
-import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 import androidx.room.Room;
 
 import android.view.Menu;
-import android.widget.ArrayAdapter;
 import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -42,24 +34,19 @@ import net.rakusei.robot.felio.model.Channel;
 import net.rakusei.robot.felio.model.Message;
 import net.rakusei.robot.felio.model.User;
 import net.rakusei.robot.felio.task.ChannelTask;
-import net.rakusei.robot.felio.task.SyncAllMessagesTask;
 import net.rakusei.robot.felio.task.TeamsTask;
 import net.rakusei.robot.felio.task.UserTask;
 
-import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
-import org.w3c.dom.Text;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
-import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
-import java.util.stream.Collectors;
 
 public class MainActivity extends BaseActivity
         implements NavigationView.OnNavigationItemSelectedListener {
@@ -76,6 +63,8 @@ public class MainActivity extends BaseActivity
 
     public List<Message> sortedList;
 
+    public long typing_reasion = 0;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -87,14 +76,7 @@ public class MainActivity extends BaseActivity
             startActivity(new Intent(this, LoginActivity.class));
             finish();
         }
-        /*FloatingActionButton fab = findViewById(R.id.fab);
-        fab.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
-                        .setAction("Action", null).show();
-            }
-        });*/
+
         DrawerLayout drawer = findViewById(R.id.drawer_layout);
         navigationView = findViewById(R.id.nav_view);
 
@@ -141,37 +123,7 @@ public class MainActivity extends BaseActivity
                                     try {
                                         final ListView listview = findViewById(R.id.message_listView);
                                         JSONObject postData = new JSONObject(jo.getString("post"));
-                                        if (!postData.has("file_ids")) {
-                                            postData.put("file_ids", new JSONArray());
-                                        }
-                                        if (!postData.has("filenames")) {
-                                            postData.put("filenames", new JSONArray());
-                                        }
-                                        if (!postData.has("hashtag")) {
-                                            postData.put("hashtag", "");
-                                        }
-                                        if (!postData.has("metadata")) {
-                                            postData.put("metadata", new JSONObject());
-                                        }
-                                        Message message = new Message();
-                                        message.channel_id = postData.getString("channel_id");
-                                        message.create_at = postData.getLong("create_at");
-                                        message.delete_at = postData.getLong("delete_at");
-                                        message.edit_at = postData.getLong("edit_at");
-                                        message.update_at = postData.getLong("update_at");
-                                        message.file_ids = postData.getJSONArray("file_ids").toString();
-                                        message.filenames = postData.getJSONArray("filenames").toString();
-                                        message.hashtag = postData.getString("hashtag");
-                                        message.id = postData.getString("id");
-                                        message.message = postData.getString("message");
-                                        message.metadata = postData.getJSONObject("metadata").toString();
-                                        message.original_id = postData.getString("original_id");
-                                        message.parent_id = postData.getString("parent_id");
-                                        message.pending_post_id = postData.getString("pending_post_id");
-                                        message.props = postData.getJSONObject("props").toString();
-                                        message.root_id = postData.getString("root_id");
-                                        message.type = postData.getString("type");
-                                        message.user_id = postData.getString("user_id");
+                                        Message message = new Message(postData);
                                         sortedList.add(message);
                                         adapter.notifyDataSetChanged();
                                         listview.setSelection(adapter.getCount() - 1);
@@ -188,10 +140,18 @@ public class MainActivity extends BaseActivity
                     @Override
                     public void onTyping(String user_id, String channel_id, int seq) {
                         try {
-                            AppDatabase db = Room.databaseBuilder(MainActivity.this.getApplicationContext(), AppDatabase.class, "felio").build();
+                            AppDatabase db = Room.databaseBuilder(MainActivity.this.getApplicationContext(), AppDatabase.class, "felio").fallbackToDestructiveMigration().build();
                             User user = db.userDao().getUserById(user_id);
                             handler.post(() -> {
-                                ((TextView) findViewById(R.id.inputting_textview)).setText(user.getName() + " is typing...");
+                                if (selectingChannel.equals(channel_id)) {
+                                    ((TextView) findViewById(R.id.inputting_textview)).setText(user.getName() + " is typing...");
+                                    typing_reasion = System.currentTimeMillis();
+                                    handler.postDelayed(() -> {
+                                        if (typing_reasion + 3 <= System.currentTimeMillis()) {
+                                            ((TextView) findViewById(R.id.inputting_textview)).setText("");
+                                        }
+                                    }, 2000);
+                                }
                             });
                             db.close();
                         } catch (Exception e) {
@@ -226,49 +186,27 @@ public class MainActivity extends BaseActivity
                 con.disconnect();
                 JSONObject jo = new JSONObject(data);
                 JSONObject ja_1 = jo.getJSONObject("posts");
-                AppDatabase db = Room.databaseBuilder(this.getApplicationContext(), AppDatabase.class, "felio").build();
+                AppDatabase db = Room.databaseBuilder(this.getApplicationContext(), AppDatabase.class, "felio").fallbackToDestructiveMigration().build();
                 Iterator<String> keys = ja_1.keys();
                 while (keys.hasNext()) {
                     String key = keys.next();
                     JSONObject postData = ja_1.getJSONObject(key);
-                    if (!postData.has("file_ids")) {
-                        postData.put("file_ids", new JSONArray());
-                    }
-                    if (!postData.has("filenames")) {
-                        postData.put("filenames", new JSONArray());
-                    }
-                    if (!postData.has("hashtag")) {
-                        postData.put("hashtag", "");
-                    }
-                    if (!postData.has("metadata")) {
-                        postData.put("metadata", new JSONObject());
-                    }
-                    Message message = new Message();
-                    message.channel_id = postData.getString("channel_id");
-                    message.create_at = postData.getLong("create_at");
-                    message.delete_at = postData.getLong("delete_at");
-                    message.edit_at = postData.getLong("edit_at");
-                    message.update_at = postData.getLong("update_at");
-                    message.file_ids = postData.getJSONArray("file_ids").toString();
-                    message.filenames = postData.getJSONArray("filenames").toString();
-                    message.hashtag = postData.getString("hashtag");
-                    message.id = postData.getString("id");
-                    message.message = postData.getString("message");
-                    message.metadata = postData.getJSONObject("metadata").toString();
-                    message.original_id = postData.getString("original_id");
-                    message.parent_id = postData.getString("parent_id");
-                    message.pending_post_id = postData.getString("pending_post_id");
-                    message.props = postData.getJSONObject("props").toString();
-                    message.root_id = postData.getString("root_id");
-                    message.type = postData.getString("type");
-                    message.user_id = postData.getString("user_id");
+                    Message message = new Message(postData);
                     //Log.d("message", message.toString());
                     db.messageDao().insert(message);
                 }
+                Channel channel = db.channelDao().getChannelById(channelid);
+                channel.lastSynctime = System.currentTimeMillis();
+                db.channelDao().insert(channel);
                 db.close();
                 List<Message> messageList = db.messageDao().getMessagesByChannel(selectingChannel);
-                sortedList = messageList.stream().sorted(
-                        (o1, o2) -> Long.compare(o1.create_at, o2.create_at)).collect(Collectors.toList());
+                messageList.sort(new Comparator<Message>() {
+                    @Override
+                    public int compare(Message o1, Message o2) {
+                        return Long.compare(o1.create_at, o2.create_at);
+                    }
+                });
+                sortedList = messageList;
 
                 handler.post(() -> {
                     final ListView listview = findViewById(R.id.message_listView);
@@ -351,7 +289,7 @@ public class MainActivity extends BaseActivity
             }
             User selectedUser = null;
             if (c == null) {
-                AppDatabase db = Room.databaseBuilder(this.getApplicationContext(), AppDatabase.class, "felio").build();
+                AppDatabase db = Room.databaseBuilder(this.getApplicationContext(), AppDatabase.class, "felio").fallbackToDestructiveMigration().build();
                 List<User> users = db.userDao().getAll();
                 for (User user : users) {
                     String user_name = user.nickname;
@@ -383,11 +321,13 @@ public class MainActivity extends BaseActivity
                         selectingChannel = finalC.id;
                         setMessage(finalC.id);
                     }).start();
+                    getSupportActionBar().setTitle(finalSelectedUser.getName());
                 } else {
                     new Thread(() -> {
                         selectingChannel = finalC.id;
                         setMessage(finalC.id);
                     }).start();
+                    getSupportActionBar().setTitle("#" + finalC.display_name);
                     Toast.makeText(this, finalC.display_name, Toast.LENGTH_LONG).show();
                 }
                 Log.d("onItemSelected", finalC.display_name + ":" + finalC.id);

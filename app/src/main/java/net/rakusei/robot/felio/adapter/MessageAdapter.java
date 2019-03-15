@@ -1,6 +1,7 @@
 package net.rakusei.robot.felio.adapter;
 
 import android.content.Context;
+import android.media.Image;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -21,6 +22,10 @@ import net.rakusei.robot.felio.model.Message;
 import net.rakusei.robot.felio.model.User;
 import net.rakusei.robot.felio.task.UserTask;
 
+import org.json.JSONArray;
+import org.json.JSONException;
+
+import java.net.URL;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.time.ZoneId;
@@ -47,6 +52,7 @@ public class MessageAdapter extends BaseAdapter {
     public void addMessage(Message message) {
         this.messageList.add(message);
     }
+
     @Override
     public int getCount() {
         return messageList.size();
@@ -79,7 +85,21 @@ public class MessageAdapter extends BaseAdapter {
                     GlideUrl glideUrl = new GlideUrl("https://mattermost.robot.rakusei.net/api/v4/users/" + user.id + "/image?_=" + user.last_picture_update, new LazyHeaders.Builder()
                             .addHeader("authorization", "BEARER " + context.getSharedPreferences("main", Context.MODE_PRIVATE).getString("token", ""))
                             .build());
-                    Glide.with(context).load(glideUrl).into((ImageView) finalConvertView.findViewById(R.id.userimageView));
+                    Glide.with(context).load(glideUrl).circleCrop().into((ImageView) finalConvertView.findViewById(R.id.userimageView));
+                    try {
+                        JSONArray jsonArray = new JSONArray(messageList.get(position).file_ids);
+                        if (jsonArray.length() >= 1) {
+                            glideUrl = new GlideUrl("https://mattermost.robot.rakusei.net/api/v4/files/" + jsonArray.getString(0), new LazyHeaders.Builder()
+                                    .addHeader("authorization", "BEARER " + context.getSharedPreferences("main", Context.MODE_PRIVATE).getString("token", ""))
+                                    .build());
+                            Glide.with(context).load(glideUrl).into((ImageView) finalConvertView.findViewById(R.id.userMessageimageView));
+                        } else {
+                            ((ImageView) finalConvertView.findViewById(R.id.userMessageimageView)).setLayoutParams(new android.widget.RelativeLayout.LayoutParams(android.widget.RelativeLayout.LayoutParams.MATCH_PARENT, 0));
+                        }
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                        ((ImageView) finalConvertView.findViewById(R.id.userMessageimageView)).setLayoutParams(new android.widget.RelativeLayout.LayoutParams(android.widget.RelativeLayout.LayoutParams.MATCH_PARENT, 0));
+                    }
                 } else {
                     new UserTask(context).execute(new String[]{messageList.get(position).user_id});
                     DateFormat formatter = new SimpleDateFormat("dd/MM/yyyy kk:mm:ss", Locale.JAPAN);

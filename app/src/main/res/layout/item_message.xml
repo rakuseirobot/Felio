@@ -8,8 +8,8 @@
         android:id="@+id/userimageView"
         android:layout_marginLeft="40px"
         android:layout_marginTop="40px"
-        android:layout_width="130px"
-        android:layout_height="130px"
+        android:layout_width="120px"
+        android:layout_height="120px"
         android:src="@mipmap/ic_launcher" />
 
     <TextView
@@ -17,6 +17,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_toRightOf="@id/userimageView"
+        android:textColor="#EE302828"
         android:layout_marginTop="40px"
         android:layout_marginLeft="40px"
         android:text="65th.Tomo"
@@ -37,10 +38,22 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_below="@id/userNametextView"
-        android:layout_toRightOf="@id/userimageView"
-        android:layout_marginTop="15px"
         android:layout_marginLeft="40px"
+        android:layout_marginTop="5px"
+        android:layout_toRightOf="@id/userimageView"
+        android:autoLink="all"
+        android:textColorLink="#2196F3"
         android:text="Hello World!"
+        android:textColor="#EE302828"
         android:textSize="40px" />
+
+    <ImageView
+        android:id="@+id/userMessageimageView"
+        android:layout_width="match_parent"
+        android:layout_height="400px"
+        android:layout_marginLeft="40px"
+        android:layout_marginTop="5px"
+        android:layout_below="@id/userMessagetextView"
+        android:layout_toRightOf="@id/userimageView" />
 
 </RelativeLayout>

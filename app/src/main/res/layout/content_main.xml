@@ -17,6 +17,14 @@
         android:divider="@null"
         android:paddingTop="8dp" />
 
+    <View
+        android:layout_alignParentBottom="true"
+        android:gravity="center_vertical"
+        android:layout_marginVertical="60dp"
+        android:layout_width="fill_parent"
+        android:layout_height="2dp"
+        android:background="@android:color/darker_gray" />
+
     <LinearLayout
         android:id="@+id/inputting_view"
         android:gravity="center_vertical"
@@ -30,8 +38,7 @@
             android:id="@+id/inputting_textview"
             android:layout_width="10dp"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="He is inputting..." />
+            android:layout_weight="1" />
     </LinearLayout>
 
     <LinearLayout
@@ -64,6 +71,8 @@
             android:id="@+id/btn_send"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:theme="@style/SEND.Button"
+            style="@style/Widget.AppCompat.Button.Colored"
             android:text="Send" />
     </LinearLayout>
 
