@@ -13,8 +13,10 @@ import java.net.URL;
 
 public class MTClient {
 
-    HttpURLConnection con = null;
-    JSONObject json = new JSONObject();
+    public HttpURLConnection con = null;
+    //JSONObject json = new JSONObject();
+
+    public String json = "";
 
     public MTClient(Context context, String method, String path) throws Exception {
         try {
@@ -31,7 +33,8 @@ public class MTClient {
             while ((line = br.readLine()) != null) {
                 data += line;
             }
-            json = new JSONObject(data);
+            json = data;
+            Log.d("MTClient", json);
             con.disconnect();
         } catch (Exception e) {
             throw e;
@@ -57,14 +60,14 @@ public class MTClient {
             while ((line = br.readLine()) != null) {
                 data += line;
             }
-            json = new JSONObject(data);
+            json = data;
             con.disconnect();
         } catch (Exception e) {
             throw e;
         }
     }
 
-    public JSONObject getResponse() {
+    public String getResponse() {
         return json;
     }
 }

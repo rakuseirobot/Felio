@@ -3,6 +3,8 @@ package net.rakusei.robot.felio.client;
 import android.content.Context;
 import android.util.Log;
 
+import net.rakusei.robot.felio.model.UserStatus;
+
 import org.java_websocket.client.WebSocketClient;
 import org.java_websocket.handshake.ServerHandshake;
 import org.json.JSONException;
@@ -64,6 +66,11 @@ public class MStreamClient extends WebSocketClient {
                         for (MStreamListener hl : listeners)
                             hl.onTyping(jo.getJSONObject("data").getString("user_id"), jo.getJSONObject("broadcast").getString("channel_id"), jo.getInt("seq"));
                         break;
+                    case "status_change":
+                        jo = new JSONObject(message);
+                        for (MStreamListener hl : listeners)
+                            hl.statusChanged(jo.getJSONObject("data").getString("user_id"), jo.getJSONObject("data").getString("status"));
+                        break;
                 }
             }
         } catch (JSONException e) {
@@ -86,5 +93,7 @@ public class MStreamClient extends WebSocketClient {
         void posted(JSONObject jo);
 
         void onTyping(String user_id, String channel_id, int seq);
+
+        void statusChanged(String user_id, String status);
     }
 }

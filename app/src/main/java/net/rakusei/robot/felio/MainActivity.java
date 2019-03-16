@@ -1,12 +1,18 @@
 package net.rakusei.robot.felio;
 
+import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
+import android.content.res.ColorStateList;
+import android.net.Uri;
 import android.os.Bundle;
 
 import android.os.Handler;
+import android.text.SpannableString;
+import android.text.style.ForegroundColorSpan;
 import android.util.Log;
 
+import androidx.core.content.ContextCompat;
 import androidx.core.view.GravityCompat;
 import androidx.appcompat.app.ActionBarDrawerToggle;
 
@@ -17,9 +23,12 @@ import com.google.android.material.navigation.NavigationView;
 import androidx.drawerlayout.widget.DrawerLayout;
 
 import androidx.appcompat.widget.Toolbar;
+import androidx.recyclerview.widget.RecyclerView;
 import androidx.room.Room;
 
 import android.view.Menu;
+import android.view.View;
+import android.widget.AbsListView;
 import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -33,10 +42,12 @@ import net.rakusei.robot.felio.database.AppDatabase;
 import net.rakusei.robot.felio.model.Channel;
 import net.rakusei.robot.felio.model.Message;
 import net.rakusei.robot.felio.model.User;
+import net.rakusei.robot.felio.model.UserStatus;
 import net.rakusei.robot.felio.task.ChannelTask;
 import net.rakusei.robot.felio.task.TeamsTask;
 import net.rakusei.robot.felio.task.UserTask;
 
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -45,8 +56,10 @@ import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 
 public class MainActivity extends BaseActivity
         implements NavigationView.OnNavigationItemSelectedListener {
@@ -64,6 +77,12 @@ public class MainActivity extends BaseActivity
     public List<Message> sortedList;
 
     public long typing_reasion = 0;
+
+    public Map<String, UserStatus> statusMap = new HashMap<>();
+
+    public long fail_streaming_time = 0;
+
+    private static final int READ_REQUEST_CODE = 42;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -84,6 +103,7 @@ public class MainActivity extends BaseActivity
                 this, drawer, toolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close);
         drawer.addDrawerListener(toggle);
         toggle.syncState();
+
         navigationView.setNavigationItemSelectedListener(this);
         new TeamsTask(this).execute();
         new ChannelTask(this).execute();
@@ -91,6 +111,41 @@ public class MainActivity extends BaseActivity
         //new SyncAllMessagesTask(this).execute();
         new Thread(() -> {
             setMessage("tgxqoq8zajdt3q7c3sz9m8n55a");
+        }).start();
+
+        /*new Thread(()->{
+            try {
+                JSONObject jsonObject = new JSONObject();
+                jsonObject.put("status", "online");
+                new MTClient(MainActivity.this, "PUT", "/users/"+getSharedPreferences("main", Context.MODE_PRIVATE).getString("id", "")+"/status", jsonObject.toString());
+            }catch (Exception e){
+                e.printStackTrace();
+            }
+        }).start();*/
+
+        new Thread(() -> {
+            AppDatabase db = Room.databaseBuilder(MainActivity.this.getApplicationContext(), AppDatabase.class, "felio").fallbackToDestructiveMigration().build();
+            List<User> users = db.userDao().getAll();
+            JSONArray jsonArray = new JSONArray();
+            for (User user : users) {
+                jsonArray.put(user.id);
+            }
+            try {
+                MTClient client = new MTClient(MainActivity.this, "POST", "/users/status/ids", jsonArray.toString());
+                if (client.con.getResponseCode() == HttpURLConnection.HTTP_OK) {
+                    //Log.d("UserStatus",new JSONArray(client.getResponse()).toString(3));
+                    JSONArray jsonArray1 = new JSONArray(client.getResponse());
+                    for (int i = 0; jsonArray1.length() > i; i++) {
+                        JSONObject jsonObject = jsonArray1.getJSONObject(i);
+                        UserStatus status = new UserStatus(jsonObject.getString("user_id"), jsonObject.getString("status"), jsonObject.getBoolean("manual"), jsonObject.getLong("last_activity_at"));
+                        statusMap.put(status.id, status);
+                    }
+                } else {
+                    Log.d("UserStatus", "Got " + client.con.getResponseCode());
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
         }).start();
 
         findViewById(R.id.btn_send).setOnClickListener((v) -> {
@@ -110,6 +165,59 @@ public class MainActivity extends BaseActivity
             }).start();
         });
 
+        findViewById(R.id.add_image_image_view).setOnClickListener((v) -> {
+            // ACTION_OPEN_DOCUMENT is the intent to choose a file via the system's file browser.
+            Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
+            // Filter to only show results that can be "opened", such as a file (as opposed to a list of contacts or timezones)
+            intent.addCategory(Intent.CATEGORY_OPENABLE);
+            // Filter to show only images, using the image MIME data type.
+            // If one wanted to search for ogg vorbis files, the type would be "audio/ogg".
+            // To search for all documents available via installed storage providers, it would be "*/*".
+            intent.setType("image/*");
+            startActivityForResult(intent, READ_REQUEST_CODE);
+        });
+
+        openStreaming();
+
+        ((ListView) findViewById(R.id.message_listView)).setOnScrollListener(new AbsListView.OnScrollListener() {
+            @Override
+            public void onScrollStateChanged(AbsListView view, int scrollState) {
+                // 0=stopped 1=down 2=up
+                // Toast.makeText(MainActivity.this,"スクロール中 (scrollState="+scrollState+")",Toast.LENGTH_SHORT).show();
+            }
+
+            @Override
+            public void onScroll(AbsListView view, int firstVisibleItem, int visibleItemCount, int totalItemCount) {
+                if (totalItemCount == firstVisibleItem + visibleItemCount) {
+                    //Toast.makeText(MainActivity.this,"最後尾まできた",Toast.LENGTH_SHORT).show();
+                }
+            }
+        });
+    }
+
+    @Override
+    public void onActivityResult(int requestCode, int resultCode,
+                                 Intent resultData) {
+
+        // The ACTION_OPEN_DOCUMENT intent was sent with the request code
+        // READ_REQUEST_CODE. If the request code seen here doesn't match, it's the
+        // response to some other intent, and the code below shouldn't run at all.
+
+        if (requestCode == READ_REQUEST_CODE && resultCode == Activity.RESULT_OK) {
+            // The document selected by the user won't be returned in the intent.
+            // Instead, a URI to that document will be contained in the return intent
+            // provided to this method as a parameter.
+            // Pull that URI using resultData.getData().
+            Uri uri = null;
+            if (resultData != null) {
+                uri = resultData.getData();
+                Log.i("onActivityResult", "Uri: " + uri.toString());
+                //showImage(uri);
+            }
+        }
+    }
+
+    public void openStreaming() {
         new Thread(() -> {
             try {
                 MStreamClient client = new MStreamClient(MainActivity.this);
@@ -158,10 +266,55 @@ public class MainActivity extends BaseActivity
                             e.printStackTrace();
                         }
                     }
+
+                    @Override
+                    public void statusChanged(String user_id, String status) {
+                        statusMap.put(user_id, new UserStatus(user_id, status, false, System.currentTimeMillis()));
+                        try {
+                            AppDatabase db = Room.databaseBuilder(MainActivity.this.getApplicationContext(), AppDatabase.class, "felio").fallbackToDestructiveMigration().build();
+                            User user = db.userDao().getUserById(user_id);
+                            Log.d(user.getName(), "==>" + status);
+                            handler.post(() -> {
+                                Menu menu = navigationView.getMenu();
+                                for (int i = 0; menu.size() > i; i++) {
+                                    MenuItem item = menu.getItem(i);
+                                    if (item.getTitle().toString().equals(user.getName())) {
+                                        Log.d("item#", item.getTitle().toString());
+                                        SpannableString spanString = new SpannableString(user.getName());
+                                        switch (statusMap.get(user_id).status) {
+                                            case ONLINE:
+                                                spanString.setSpan(new ForegroundColorSpan(ContextCompat.getColor(MainActivity.this, R.color.colorOnline)), 0, spanString.length(), 0);
+                                                break;
+                                            case OFFLINE:
+                                                spanString.setSpan(new ForegroundColorSpan(ContextCompat.getColor(MainActivity.this, R.color.colorOffline)), 0, spanString.length(), 0);
+                                                break;
+                                            case AWAY:
+                                                spanString.setSpan(new ForegroundColorSpan(ContextCompat.getColor(MainActivity.this, R.color.colorAway)), 0, spanString.length(), 0);
+                                                break;
+                                            case DND:
+                                                spanString.setSpan(new ForegroundColorSpan(ContextCompat.getColor(MainActivity.this, R.color.colorDND)), 0, spanString.length(), 0);
+                                                break;
+                                        }
+                                        item.setTitle(spanString);
+                                    }
+                                }
+                            });
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
+                    }
                 });
                 Log.d("websocket", client.getURI().toString());
             } catch (Exception e) {
                 e.printStackTrace();
+                if (MainActivity.this.fail_streaming_time + 1000 > System.currentTimeMillis()) {
+                    handler.post(() -> {
+                        Toast.makeText(MainActivity.this, "エラー起きすぎ。反省しろks", Toast.LENGTH_LONG).show();
+                    });
+                } else {
+                    MainActivity.this.fail_streaming_time = System.currentTimeMillis();
+                    openStreaming();
+                }
             }
         }).start();
     }
@@ -280,6 +433,7 @@ public class MainActivity extends BaseActivity
             return false;
         }
         new Thread(() -> {
+            Log.d("onItemSelected", item.getTitle().toString());
             Channel c = null;
             boolean isUser = false;
             for (Channel channel : channelList) {
@@ -296,7 +450,7 @@ public class MainActivity extends BaseActivity
                     if (user_name.equals("")) {
                         user_name = user.first_name + user.last_name;
                     }
-                    if (item.getTitle().equals(user_name)) {
+                    if (item.getTitle().toString().equals(user_name)) {
                         for (Channel channel : channelList) {
                             if (channel.display_name.contains(user.id)) {
                                 c = channel;
@@ -338,4 +492,46 @@ public class MainActivity extends BaseActivity
         drawer.closeDrawer(GravityCompat.START);
         return true;
     }
+
+    /*@Override
+    protected void onDestroy() {
+        super.onDestroy();
+        new Thread(()->{
+            try {
+                JSONObject jsonObject = new JSONObject();
+                jsonObject.put("status", "offline");
+                new MTClient(MainActivity.this, "PUT", "/users/"+getSharedPreferences("main", Context.MODE_PRIVATE).getString("id", "")+"/status", jsonObject.toString());
+            }catch (Exception e){
+                e.printStackTrace();
+            }
+        }).start();
+    }
+
+    @Override
+    protected void onRestart() {
+        super.onRestart();
+        new Thread(()->{
+            try {
+                JSONObject jsonObject = new JSONObject();
+                jsonObject.put("status", "online");
+                new MTClient(MainActivity.this, "PUT", "/users/"+getSharedPreferences("main", Context.MODE_PRIVATE).getString("id", "")+"/status", jsonObject.toString());
+            }catch (Exception e){
+                e.printStackTrace();
+            }
+        }).start();
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        new Thread(()->{
+            try {
+                JSONObject jsonObject = new JSONObject();
+                jsonObject.put("status", "away");
+                new MTClient(MainActivity.this, "PUT", "/users/"+getSharedPreferences("main", Context.MODE_PRIVATE).getString("id", "")+"/status", jsonObject.toString());
+            }catch (Exception e){
+                e.printStackTrace();
+            }
+        }).start();
+    }*/
 }

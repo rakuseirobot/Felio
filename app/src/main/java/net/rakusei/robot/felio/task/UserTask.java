@@ -1,12 +1,17 @@
 package net.rakusei.robot.felio.task;
 
 import android.content.Context;
+import android.graphics.PorterDuff;
+import android.graphics.drawable.Drawable;
 import android.os.AsyncTask;
+import android.text.SpannableString;
+import android.text.style.ForegroundColorSpan;
 import android.util.Log;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.core.content.ContextCompat;
 import androidx.room.Room;
 
 import com.bumptech.glide.Glide;
@@ -140,10 +145,50 @@ public class UserTask extends AsyncTask<String, Void, String> {
                     } catch (Exception e) {
                     }
                 }else{
-                    if(jo.getString("nickname").equals("")){
-                        activity.navigationView.getMenu().add(R.id.drawer_direct, 100, 0,jo.getString("first_name")+jo.getString("last_name")).setIcon(R.drawable.outline_person_outline_black_48);
-                    }else {
-                        activity.navigationView.getMenu().add(R.id.drawer_direct, 100, 0,jo.getString("nickname")).setIcon(R.drawable.outline_person_outline_black_48);
+                    if (activity.statusMap.containsKey(jo.getString("id"))) {
+                        if (jo.getString("nickname").equals("")) {
+                            SpannableString spanString = new SpannableString(jo.getString("first_name") + jo.getString("last_name"));
+                            switch (activity.statusMap.get(jo.getString("id")).status) {
+                                case ONLINE:
+                                    spanString.setSpan(new ForegroundColorSpan(ContextCompat.getColor(activity, R.color.colorOnline)), 0, spanString.length(), 0);
+                                    break;
+                                case OFFLINE:
+                                    spanString.setSpan(new ForegroundColorSpan(ContextCompat.getColor(activity, R.color.colorOffline)), 0, spanString.length(), 0);
+                                    break;
+                                case AWAY:
+                                    spanString.setSpan(new ForegroundColorSpan(ContextCompat.getColor(activity, R.color.colorAway)), 0, spanString.length(), 0);
+                                    break;
+                                case DND:
+                                    spanString.setSpan(new ForegroundColorSpan(ContextCompat.getColor(activity, R.color.colorDND)), 0, spanString.length(), 0);
+                                    break;
+                            }
+                            activity.navigationView.getMenu().add(R.id.drawer_direct, 100, 0, spanString).setIcon(R.drawable.outline_person_outline_black_48);
+                        } else {
+                            SpannableString spanString = new SpannableString(jo.getString("nickname"));
+                            switch (activity.statusMap.get(jo.getString("id")).status) {
+                                case ONLINE:
+                                    spanString.setSpan(new ForegroundColorSpan(ContextCompat.getColor(activity, R.color.colorOnline)), 0, spanString.length(), 0);
+                                    break;
+                                case OFFLINE:
+                                    spanString.setSpan(new ForegroundColorSpan(ContextCompat.getColor(activity, R.color.colorOffline)), 0, spanString.length(), 0);
+                                    break;
+                                case AWAY:
+                                    spanString.setSpan(new ForegroundColorSpan(ContextCompat.getColor(activity, R.color.colorAway)), 0, spanString.length(), 0);
+                                    break;
+                                case DND:
+                                    spanString.setSpan(new ForegroundColorSpan(ContextCompat.getColor(activity, R.color.colorDND)), 0, spanString.length(), 0);
+                                    break;
+                            }
+                            activity.navigationView.getMenu().add(R.id.drawer_direct, 100, 0, spanString).setIcon(R.drawable.outline_person_outline_black_48);
+                        }
+                    } else {
+                        Log.d("UserStatus", "なし！！！！");
+                        if (jo.getString("nickname").equals("")) {
+                            activity.navigationView.getMenu().add(R.id.drawer_direct, 100, 0, jo.getString("first_name") + jo.getString("last_name")).setIcon(R.drawable.outline_person_outline_black_48);
+                        } else {
+                            activity.navigationView.getMenu().add(R.id.drawer_direct, 100, 0, jo.getString("nickname")).setIcon(R.drawable.outline_person_outline_black_48);
+                        }
+
                     }
                 }
             }
