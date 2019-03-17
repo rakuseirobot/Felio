@@ -1,1 +1,1 @@
-include ':app',':popup-bubble'
+include ':app',':popup-bubble',':pinchimageview'

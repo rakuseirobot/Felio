@@ -35,6 +35,8 @@ dependencies {
 
     implementation project(':popup-bubble') // 最新の投稿に戻るボタン
 
+    implementation project(':pinchimageview')
+
     annotationProcessor 'com.github.bumptech.glide:compiler:4.9.0'
     testImplementation 'junit:junit:4.12'
     androidTestImplementation 'androidx.test.ext:junit:1.1.0'

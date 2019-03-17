@@ -4,10 +4,14 @@ import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.content.res.ColorStateList;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Bundle;
 
 import android.os.Handler;
+import android.os.ParcelFileDescriptor;
 import android.text.SpannableString;
 import android.text.style.ForegroundColorSpan;
 import android.util.Log;
@@ -18,6 +22,7 @@ import androidx.appcompat.app.ActionBarDrawerToggle;
 
 import android.view.MenuItem;
 
+import com.bumptech.glide.Glide;
 import com.google.android.material.navigation.NavigationView;
 
 import androidx.drawerlayout.widget.DrawerLayout;
@@ -29,6 +34,7 @@ import androidx.room.Room;
 import android.view.Menu;
 import android.view.View;
 import android.widget.AbsListView;
+import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -51,7 +57,12 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.io.BufferedInputStream;
 import java.io.BufferedReader;
+import java.io.ByteArrayOutputStream;
+import java.io.DataOutputStream;
+import java.io.FileDescriptor;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
@@ -60,6 +71,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutionException;
 
 public class MainActivity extends BaseActivity
         implements NavigationView.OnNavigationItemSelectedListener {
@@ -83,6 +95,10 @@ public class MainActivity extends BaseActivity
     public long fail_streaming_time = 0;
 
     private static final int READ_REQUEST_CODE = 42;
+
+    public List<User> users = null;
+
+    public JSONObject uploadImage = null;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -111,6 +127,12 @@ public class MainActivity extends BaseActivity
         //new SyncAllMessagesTask(this).execute();
         new Thread(() -> {
             setMessage("tgxqoq8zajdt3q7c3sz9m8n55a");
+        }).start();
+
+        new Thread(() -> {
+            AppDatabase db = Room.databaseBuilder(MainActivity.this.getApplicationContext(), AppDatabase.class, "felio").build();
+            users = db.userDao().getAll();
+            db.close();
         }).start();
 
         /*
@@ -156,8 +178,17 @@ public class MainActivity extends BaseActivity
                     JSONObject jo = new JSONObject();
                     jo.put("channel_id", selectingChannel);
                     jo.put("message", message);
+                    if (uploadImage != null) {
+                        jo.put("file_ids", new JSONArray().put(uploadImage.getString("id")));
+                        uploadImage = null;
+                    }
                     new MTClient(MainActivity.this, "POST", "/posts", jo.toString());
                     handler.post(() -> {
+                        ImageView imageView = findViewById(R.id.send_image_preview_view);
+                        int w = 100, h = 100;
+                        Bitmap.Config conf = Bitmap.Config.ARGB_8888; // see other conf types
+                        Bitmap bmp = Bitmap.createBitmap(w, h, conf);
+                        imageView.setImageBitmap(bmp);
                         ((TextView) findViewById(R.id.et_message)).setText("");
                     });
                 } catch (Exception e) {
@@ -213,6 +244,25 @@ public class MainActivity extends BaseActivity
             if (resultData != null) {
                 uri = resultData.getData();
                 Log.i("onActivityResult", "Uri: " + uri.toString());
+                Uri finalUri = uri;
+                new Thread(() -> {
+                    try {
+                        ParcelFileDescriptor parcelFileDescriptor = getContentResolver().openFileDescriptor(finalUri, "r");
+                        FileDescriptor fileDescriptor = parcelFileDescriptor.getFileDescriptor();
+                        Bitmap image = BitmapFactory.decodeFileDescriptor(fileDescriptor);
+                        parcelFileDescriptor.close();
+                        JSONObject jsonObject = upload(image, selectingChannel);
+                        uploadImage = jsonObject;
+                        Drawable drawable = Glide.with(MainActivity.this).load(image).submit(100, image.getHeight() / (image.getWidth() / 100)).get();
+                        handler.post(() -> {
+                            ImageView imageView = findViewById(R.id.send_image_preview_view);
+                            Glide.with(MainActivity.this).load(drawable).into(imageView);
+                        });
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                }).start();
+
                 //showImage(uri);
             }
         }
@@ -313,8 +363,8 @@ public class MainActivity extends BaseActivity
                         Toast.makeText(MainActivity.this, "エラー起きすぎ。反省しろks", Toast.LENGTH_LONG).show();
                     });
                 } else {*/
-                    MainActivity.this.fail_streaming_time = System.currentTimeMillis();
-                    openStreaming();
+                MainActivity.this.fail_streaming_time = System.currentTimeMillis();
+                openStreaming();
                 //}
             }
         }).start();
@@ -470,6 +520,14 @@ public class MainActivity extends BaseActivity
                 if (finalC == null) {
                     Toast.makeText(this, "ERROR", Toast.LENGTH_LONG).show();
                 }
+                if (!selectingChannel.equals(finalC.id)) {
+                    uploadImage = null;
+                    ImageView imageView = findViewById(R.id.send_image_preview_view);
+                    int w = 100, h = 100;
+                    Bitmap.Config conf = Bitmap.Config.ARGB_8888; // see other conf types
+                    Bitmap bmp = Bitmap.createBitmap(w, h, conf);
+                    imageView.setImageBitmap(bmp);
+                }
                 if (finalIsUser) {
                     Toast.makeText(this, finalSelectedUser.getName(), Toast.LENGTH_LONG).show();
                     new Thread(() -> {
@@ -492,6 +550,82 @@ public class MainActivity extends BaseActivity
         DrawerLayout drawer = findViewById(R.id.drawer_layout);
         drawer.closeDrawer(GravityCompat.START);
         return true;
+    }
+
+
+    public JSONObject upload(Bitmap bitmap, String channel_id) throws Exception {
+
+        String crlf = "\r\n";
+        String twoHyphens = "--";
+        String boundary = "uygntf8dfrd7eb5ebsx";
+
+        HttpURLConnection httpUrlConnection = null;
+        URL url = new URL("https://mattermost.robot.rakusei.net/api/v4/files");
+        httpUrlConnection = (HttpURLConnection) url.openConnection();
+        httpUrlConnection.setUseCaches(false);
+        httpUrlConnection.setDoOutput(true);
+        httpUrlConnection.setRequestMethod("POST");
+        httpUrlConnection.setRequestProperty("Connection", "Keep-Alive");
+        httpUrlConnection.setRequestProperty("Cache-Control", "no-cache");
+        httpUrlConnection.setRequestProperty("Content-Type", "multipart/form-data;boundary=" + boundary);
+        httpUrlConnection.setRequestProperty("authorization", "BEARER " + MainActivity.this.getSharedPreferences("main", Context.MODE_PRIVATE).getString("token", ""));
+
+        httpUrlConnection.connect();
+
+        DataOutputStream request = new DataOutputStream(httpUrlConnection.getOutputStream());
+        request.writeBytes("--" + boundary + crlf);
+        request.writeBytes("Content-Disposition: form-data; name=\"channel_id\"" + crlf +
+                crlf +
+                selectingChannel + crlf);
+        request.writeBytes("--" + boundary + crlf);
+        request.writeBytes("Content-Disposition: form-data; name=\"client_ids\"" + crlf +
+                crlf +
+                "uid67acffc4-5519-4de1-b728-861218914445" + crlf);
+        request.writeBytes("--" + boundary + crlf);
+        request.writeBytes("Content-Disposition: form-data; name=\"files\"; filename=\"image-39e60bac-2c3b-4b39-b789-0b4ae509a6d9.jpg\"; filename*=\"utf-8''image-39e60bac-2c3b-4b39-b789-0b4ae509a6d9.jpg\"" + crlf +
+                "Content-Type: image/jpeg" + crlf + crlf);
+
+        //I want to send only 8 bit black & white bitmaps
+        /*byte[] pixels = new byte[bitmap.getWidth() * bitmap.getHeight()];
+        for (int i = 0; i < bitmap.getWidth(); ++i) {
+            for (int j = 0; j < bitmap.getHeight(); ++j) {
+                //we're interested only in the MSB of the first byte,
+                //since the other 3 bytes are identical for B&W images
+                pixels[i + j] = (byte) ((bitmap.getPixel(i, j) & 0x80) >> 7);
+            }
+        }
+
+        request.write(pixels);*/
+
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        bitmap.compress(Bitmap.CompressFormat.JPEG, 25, bos);
+        byte[] bitmapdata = bos.toByteArray();
+
+        request.write(bitmapdata);
+
+        request.writeBytes(crlf + twoHyphens + boundary + twoHyphens + crlf);
+        request.flush();
+        request.close();
+
+        InputStream responseStream = new BufferedInputStream(httpUrlConnection.getInputStream());
+
+        BufferedReader responseStreamReader =
+                new BufferedReader(new InputStreamReader(responseStream));
+
+        String line = "";
+        StringBuilder stringBuilder = new StringBuilder();
+
+        while ((line = responseStreamReader.readLine()) != null) {
+            stringBuilder.append(line).append("\n");
+        }
+        responseStreamReader.close();
+
+        String response = stringBuilder.toString();
+        Log.d("upload#rescode", httpUrlConnection.getResponseCode() + "");
+        Log.d("upload", new JSONObject(response).toString(3));
+        responseStream.close();
+        httpUrlConnection.disconnect();
+        return new JSONObject(response).getJSONArray("file_infos").getJSONObject(0);
     }
 
     /*@Override
