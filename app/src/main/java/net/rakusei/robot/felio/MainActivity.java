@@ -113,8 +113,8 @@ public class MainActivity extends BaseActivity
             setMessage("tgxqoq8zajdt3q7c3sz9m8n55a");
         }).start();
 
-        Log.d("test", "test");
-        /*new Thread(()->{
+        /*
+        new Thread(()->{
             try {
                 JSONObject jsonObject = new JSONObject();
                 jsonObject.put("status", "online");
