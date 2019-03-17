@@ -307,14 +307,14 @@ public class MainActivity extends BaseActivity
                 Log.d("websocket", client.getURI().toString());
             } catch (Exception e) {
                 e.printStackTrace();
-                if (MainActivity.this.fail_streaming_time + 1000 > System.currentTimeMillis()) {
+                /*if (MainActivity.this.fail_streaming_time + 1000 > System.currentTimeMillis()) {
                     handler.post(() -> {
                         Toast.makeText(MainActivity.this, "エラー起きすぎ。反省しろks", Toast.LENGTH_LONG).show();
                     });
-                } else {
+                } else {*/
                     MainActivity.this.fail_streaming_time = System.currentTimeMillis();
                     openStreaming();
-                }
+                //}
             }
         }).start();
     }
